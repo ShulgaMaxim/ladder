@@ -1,123 +1,85 @@
-#!/usu/bin/perl
+#!/usr/bin/perl -w
+#(c)Shul'Ga
 
-use Encode;
 use strict;
+use Encode;
 use open qw/ :encoding(UTF-8) :std/;
-
-my %used_words;
-my @first;
-my $count;
-
-our ($begin_time_sec,$begin_time_min)=localtime(time);
-our $f;
-our @dictionary;
-our $word_len;
-our %generation;
-our $l;
 
 if($ARGV[0]eq '-h')
 {
     &help();
     exit(1);
-}    
-    open D, "<dictionary.sh" or die "Coudn't open file: $!";
-    $f = decode 'utf8',$ARGV[1];  
-    $l = decode 'utf8',$ARGV[0];  
-
-
-    $word_len = length($f);
-if ($word_len = length ($l))
-{
-    while (<D>) 
-    {
-        chop;
-        chop;
-        $count+=1 if(/^[$f,$l]$/);
-        if (length($_) == $word_len) 
-        {
-            push @dictionary,$_;
-        }
-    }
-    close D;
-    if ($count>=2)
-        {
-            push @first,$f;
-            &ladder(@first);
-        }    
-        else
-        {
-            print "Dictionry hasn't word\n"; 
-        }
 }
-else
+
+my ($first,$last)=@ARGV;
+my %new_generation=();
+my %generation=();
+
+$first = decode 'utf8',$ARGV[1];  
+$last = decode 'utf8',$ARGV[0];
+
+if(length($first)!=length($last))
 {
     print "Words of different length\n";
+    exit(1)
+}  
+
+open D, "<dictionary.sh" or die "Couldn't open file :$!";
+while (<D>)
+{
+    chop;
+    chop;
+    $generation{$_}=undef if(length($first)==length($_));
+}
+close D;
+
+if((not exists $generation{$first})||(not exists $generation{$first}))
+{
+    print "Dictionry hasn't word\n";
+    exit(1); 
 }
 
+my @parents;
+push @parents,$first;
+&ladder(@parents);
 
-#######################
 sub ladder(@)
 {
-    my @parent=@_;
     my @childs;
-    
-    for my $parent(@parent)
-    {   
-        $used_words{$parent}=1;
-        if($parent eq $l) 
+    for my $parent(@_)
+    {
+        if ($parent ne $last)
         {
-            my $word=$l;
-            while ($word ne $f) 
+            while (my ($key,$value) = each %generation)
             {
-                print $word,"\n";
-                $word=$generation{$word};
+                my $check= $key^$parent;   
+                $check =~s/\x00//g;
+                if((length($check)==1)&&(not defined $value))
+                {
+                    $generation{$key}=$parent;
+                    $new_generation{$key}=undef;
+                    push @childs,$key;      
+                }
             }
-            print $f,"\n";
-            my ($finish_time_sec,$finish_time_min)=localtime(time);
-            print($finish_time_sec+$finish_time_min*60-$begin_time_sec-$begin_time_min*60);
+        }
+        else
+        {
+            print $last,$/;
+            while($last ne $first)
+            {
+                print $generation{$last},$/;   
+                $last=$generation{$last};
+            }
             exit(1);
         }
-        for my $word (@dictionary)
-        {   
-            my @p=split //,$parent;
-            my @w=split //,$word;
-            $word= join "", @w;
-            if((can_be_next($parent,$word))&&(not exists $used_words{$word}))
-            {
-                $generation{$word}=$parent;
-                push @childs,$word;
-                $used_words{$word}=1;
-                last if ($word=~/^$l$/);           
-            }
-        }
+    }
+    if(0+@childs==0)
+    {
+        print "It is impossimble to execute transformation\n";
+        exit(1);
     }
     &ladder(@childs);
-    return 0;
 }
-#########################
-
-sub can_be_next 
-{
-    my ($w1,$w2) = @_;
-    my $len = length($w1);
-    my @w1=split //,$w1;
-    my @w2=split //,$w2; 
-    my $bad = 0;
-
-    for my $i(0..$len-1) 
-    {
-        if($w1[$i] ne $w2[$i]) 
-        {
-            $bad += 1;
-        }
-        if($bad>1) 
-        {
-            return 0;
-        }
-    } 
-    return $bad == 1;
-}
-#######################
 
 sub help
 {
@@ -125,6 +87,6 @@ sub help
     print "For program start you should enter two words\n"; 
     print "INITIAL_WORD-the word with which will begin search\n"; 
     print "FINAL_WORD-the word to which aspires the program\n";
-    print "On termination of program work in std there will be the mildest transformation .If you see an inscription of \"Out Of Memory\" transformation means it is impossible\n";
-    print "Created by Shul'ga";       
+    print "On termination of program work in std there will be the mildest transformation .If you see an inscription of \"It is impossimble to execute transformation\" transformation means it is impossible\n";
+    print "Created by Shul'ga\n";       
 }
