@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-#(c)Shul'Ga
+#(c)Shulga
 
 use strict;
 use Encode;
@@ -88,5 +88,5 @@ sub help
     print "INITIAL_WORD-the word with which will begin search\n"; 
     print "FINAL_WORD-the word to which aspires the program\n";
     print "On termination of program work in std there will be the mildest transformation .If you see an inscription of \"It is impossimble to execute transformation\" transformation means it is impossible\n";
-    print "Created by Shul'ga\n";       
+    print "Created by Shulga\n";       
 }
